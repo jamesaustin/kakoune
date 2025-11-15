@@ -1220,6 +1220,17 @@ void highlight_selections(HighlightContext context, DisplayBuffer& display_buffe
     }
 }
 
+static int local_iswprint(wchar_t wc)
+{
+    if (wc < 0xffU)
+        return (wc+1 & 0x7f) >= 0x21;
+    if (wc < 0x2028U || wc-0x202aU < 0xd800-0x202a || wc-0xe000U < 0xfff9-0xe000)
+        return 1;
+    if (wc-0xfffcU > 0x10ffff-0xfffc || (wc&0xfffe)==0xfffe)
+        return 0;
+    return 1;
+}
+
 void expand_unprintable(HighlightContext context, DisplayBuffer& display_buffer, BufferRange)
 {
     const auto& buffer = context.context.buffer();
@@ -1237,7 +1248,7 @@ void expand_unprintable(HighlightContext context, DisplayBuffer& display_buffer,
             {
                 auto next = it;
                 Codepoint cp = utf8::read_codepoint(next, end);
-                if (cp != '\n' and (cp < ' ' or cp > '~') and not iswprint((wchar_t)cp))
+                if (cp != '\n' and (cp < ' ' or cp > '~') and not local_iswprint((wchar_t)cp))
                 {
                     if (ByteCount pos(it - line_data); pos != begin.column)
                         atom_it = ++line.split(atom_it, {begin.line, pos});
