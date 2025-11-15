@@ -469,6 +469,37 @@ UniquePtr<Highlighter> create_dynamic_regex_highlighter(HighlighterParameters pa
     return make_hl(get_regex, resolve_faces);
 }
 
+const HighlighterDesc window_desc = {
+    "Parameters: <face>\n"
+    "Highlight the window with <face>",
+    {}
+};
+UniquePtr<Highlighter> create_window_highlighter(HighlighterParameters params, Highlighter*)
+{
+    if (params.size() != 1)
+        throw runtime_error("wrong parameter count");
+
+    auto func = [facespec=parse_face(params[0])]
+                (HighlightContext context, DisplayBuffer& display_buffer, BufferRange)
+    {
+        auto face = context.context.faces()[facespec];
+        for (auto& it : display_buffer.lines())
+        {
+            ColumnCount column = 0;
+            for (auto& atom : it)
+            {
+                column += atom.length();
+                apply_face(face)(atom);
+            }
+            const ColumnCount remaining = context.context.window().dimensions().column - column;
+            if (remaining > 0)
+                it.push_back({String{' ', remaining}, face});
+        }
+    };
+
+    return make_highlighter(std::move(func));
+}
+
 const HighlighterDesc line_desc = {
     "Parameters: <value string> <face>\n"
     "Highlight the line given by evaluating <value string> with <face>",
@@ -2430,6 +2461,9 @@ void register_highlighters()
     registry.insert({
         "group",
         { create_highlighter_group, &higlighter_group_desc } });
+    registry.insert({
+        "window",
+        { create_window_highlighter, &window_desc } });
     registry.insert({
         "line",
         { create_line_highlighter, &line_desc } });
