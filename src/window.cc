@@ -173,7 +173,22 @@ const DisplayBuffer& Window::update_display_buffer(const Context& context)
     }
 
     for (auto& line : m_display_buffer.lines())
+    {
+        const auto line_range = line.range();
         line.trim_from(setup.widget_columns, setup.first_column, m_dimensions.column);
+
+        bool has_buffer_atom = false;
+        for (auto& atom : line)
+        {
+            if (atom.has_buffer_range())
+            {
+                has_buffer_atom = true;
+                break;
+            }
+        }
+        if (not has_buffer_atom and line_range.begin < line_range.end)
+            line.push_back(DisplayAtom{buffer(), line_range, String{}}); // keep buffer coord even when fully trimmed
+    }
     if (m_display_buffer.lines().size() > m_dimensions.line)
         m_display_buffer.lines().resize((size_t)m_dimensions.line);
 
