@@ -588,11 +588,10 @@ UniquePtr<Highlighter> create_column_highlighter(HighlighterParameters params, H
             return;
 
         const auto face = context.context.faces()[facespec];
-        const ColumnCount first_column = std::max(0_col, context.setup.first_column);
-        if (column < first_column or column >= first_column + context.context.window().dimensions().column)
+        if (column < context.setup.first_column or column >= context.setup.first_column + context.context.window().dimensions().column)
             return;
 
-        column += context.setup.widget_columns - first_column;
+        column += context.setup.widget_columns - context.setup.first_column;
         for (auto& line : display_buffer.lines())
         {
             auto remaining_col = column;
